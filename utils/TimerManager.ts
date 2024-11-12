@@ -183,3 +183,70 @@ export class TimerManager {
         }
     }
 }
+
+// * example
+// const manager = TimerManager.instance;
+// // 计时器可以通过manager启动或关闭，也可以自己启动
+// const onTimeChange = (elapsedTime: number): void => console.log(`已经过: ${elapsedTime / 1000} 秒`);
+// const onTimeFinished = (): void => console.log('计时结束！');
+
+// // 添加一个5秒的倒计时，每秒更新一次
+// const countdownOptions = {
+//     duration: 5 * 1000,
+//     onTimeChange,
+//     onTimeFinished
+// };
+// const countdownTimer = manager.addTimer(countdownOptions);
+// countdownTimer.start();
+// manager.startTimer(countdownTimer.id);
+
+// // 添加一个正计时，每秒更新一次
+// const countupOptions = {
+//     isCountdown: false,
+//     interval: 1000,
+//     onTimeChange,
+//     onTimeFinished
+// };
+// const countupTimer = manager.addTimer(countupOptions);
+// countupTimer.start();
+// manager.startTimer(countupTimer.id);
+// setTimeout(() => {
+//     // 3秒后停止计时
+//     countupTimer.stop();
+//     manager.stopTimer(countupTimer.id);
+// }, 3000);
+
+// let count = 0; // 设定一个计数器作为停止条件
+
+// const pollingOptions = {
+//     interval: 2000, // 每2秒轮询一次
+//     onTick: async () => {
+//         let retryCount = 0;
+//         const maxRetries = 5; // 最大重试次数
+
+//         count += 1;
+//         console.log(`Count: ${count}`);
+
+//         try {
+//             // 假设当计数为5时停止轮询
+//             if (count >= 5) {
+//                 console.log('条件达成，停止轮询');
+//                 return true; // 返回 true，表示需要停止轮询
+//             }
+//             await new Promise((resolve) => setTimeout(resolve, 1000)); // 每次操作耗时1秒
+//             return false; // 返回 false，表示继续轮询
+//         } catch (error) {
+//             retryCount++;
+//             if (retryCount >= maxRetries) {
+//                 console.error('达到最大重试次数，停止轮询');
+//                 return true;
+//             }
+//             return false;
+//         }
+//     }
+// };
+
+// // 创建轮询定时器并启动
+// const pollingTimer = manager.addPollingTimer(pollingOptions);
+// pollingTimer.start();
+// manager.startTimer(pollingTimer.id);
