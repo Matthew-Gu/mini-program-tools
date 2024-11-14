@@ -65,6 +65,42 @@ App({
 
         console.log('golbalData', this.globalData);
     },
+    redirect(options) {
+        const { url, params = {}, events = {}, keep = true, callback } = options;
+
+        const queryString = Object.keys(params)
+            .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+            .join('&');
+
+        const fullUrl = queryString ? `${url}?${queryString}` : url;
+
+        const successCallback = (res) => {
+            if (callback && typeof callback === 'function') {
+                callback(null, res);
+            }
+        };
+
+        const errorCallback = (err) => {
+            if (callback && typeof callback === 'function') {
+                callback(err);
+            }
+        };
+
+        if (keep) {
+            wx.navigateTo({
+                url: fullUrl,
+                events: events, // 传递给目标页面的事件
+                success: successCallback,
+                fail: errorCallback
+            });
+        } else {
+            wx.redirectTo({
+                url: fullUrl,
+                success: successCallback,
+                fail: errorCallback
+            });
+        }
+    },
     shareAppMessage() {
         let pathUrl = `/pages/login/index`;
 
