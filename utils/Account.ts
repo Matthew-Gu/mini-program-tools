@@ -85,7 +85,7 @@ export class Account {
                     });
                     resolve({});
                 } else {
-                    reject(new Error('缺少登录参数'));
+                    reject('缺少登录参数');
                 }
             }
         });
