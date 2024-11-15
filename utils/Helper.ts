@@ -190,6 +190,17 @@ export default class Helper {
         }
     }
 
+    /** 剔除对象中的空值 */
+    public static filterEmpty(obj: object): object {
+        const result = {};
+        for (const key in obj) {
+            if (obj.hasOwnProperty(key) && obj[key] !== null && obj[key] !== undefined && obj[key] !== '') {
+                result[key] = obj[key];
+            }
+        }
+        return result;
+    }
+
     /** 参数字符串化 */
     public static qsStringify(obj: object): string {
         // 检查是否为对象类型
@@ -227,22 +238,18 @@ export default class Helper {
         const pairs = queryString.split('&');
 
         // 遍历键值对数组，解析成对象的属性和值
-        pairs.forEach((pair) => {
-            // 分割键值对
-            const [key, value] = pair.split('=');
-
-            // 对键和值进行解码
-            const decodedKey = decodeURIComponent(key);
-            const decodedValue = decodeURIComponent(value);
+        for (const pair of pairs) {
+            // 分割键值对并解码
+            const [key, value] = pair.split('=').map(decodeURIComponent);
 
             // 检查值是否是数组的形式（以逗号分隔）
-            if (decodedValue.includes(',')) {
+            if (value.includes(',')) {
                 // 将值拆分为数组
-                result[decodedKey] = decodedValue.split(',');
+                result[key] = value.split(',');
             } else {
-                result[decodedKey] = decodedValue;
+                result[key] = value;
             }
-        });
+        }
 
         return result;
     }
