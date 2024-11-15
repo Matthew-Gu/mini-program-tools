@@ -1,4 +1,5 @@
 import { smc } from './utils/Singleton';
+import Helper from './utils/Helper';
 
 App({
     globalData: {
@@ -67,11 +68,7 @@ App({
     },
     redirect(options) {
         const { url, params = {}, events = {}, keep = true, callback } = options;
-
-        const queryString = Object.keys(params)
-            .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
-            .join('&');
-
+        const queryString = Helper.qsStringify(params);
         const fullUrl = queryString ? `${url}?${queryString}` : url;
 
         const successCallback = (res) => {

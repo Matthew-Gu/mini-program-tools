@@ -1,15 +1,4 @@
 export default class Helper {
-    /** 将数组打乱 */
-    public static shuffle(value: Array<any>): Array<any> {
-        let length = value.length;
-        for (let i = length - 1; i > 0; i--) {
-            let j = Math.floor(Math.random() * (i + 1));
-            [value[i], value[j]] = [value[j], value[i]];
-        }
-
-        return value;
-    }
-
     /** 2个任意精度数字的加法计算 */
     public static add(left_operand: number, right_operand: number): number {
         let r1, r2, max;
@@ -84,6 +73,17 @@ export default class Helper {
         return (r1 / r2) * Math.pow(10, t2 - t1);
     }
 
+    /** 将数组打乱 */
+    public static shuffle(value: Array<any>): Array<any> {
+        let length = value.length;
+        for (let i = length - 1; i > 0; i--) {
+            let j = Math.floor(Math.random() * (i + 1));
+            [value[i], value[j]] = [value[j], value[i]];
+        }
+
+        return value;
+    }
+
     /** 返回指定范围的随机整数 */
     public static intRand(min: number, max: number): number {
         let value: number = Math.random() * (max - min + 1) + min;
@@ -103,28 +103,6 @@ export default class Helper {
     /** 生成有道词典英语音频 */
     public static getAudioUrl(english: string) {
         return `http://dict.youdao.com/dictvoice?type=0&audio=${english}`;
-    }
-
-    /** 格式化时间 */
-    public static formatSeconds(seconds: number, format = 'HH:mm:ss'): string {
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secs = seconds % 60;
-
-        if (hours === 0) {
-            format = format.replace(/HH[^a-zA-Z0-9]*|H[^a-zA-Z0-9]*/, '');
-        }
-
-        const formatTokens: Record<string, string> = {
-            HH: hours.toString().padStart(2, '0'),
-            H: hours.toString(),
-            mm: minutes.toString().padStart(2, '0'),
-            m: minutes.toString(),
-            ss: secs.toString().padStart(2, '0'),
-            s: secs.toString()
-        };
-
-        return format.replace(/HH|H|mm|m|ss|s/g, (match) => formatTokens[match]);
     }
 
     /** 格式化日期 */
@@ -177,54 +155,9 @@ export default class Helper {
         }
         return format;
     }
-    public static getDateTime(): number {
-        return new Date().getTime();
-    }
-    public static secondChange(t: number): any {
-        if (t > 60) {
-            return Math.floor(t / 60) + '分' + Math.floor(t % 60) + '秒';
-        }
-        return Math.floor(t) + '秒';
-    }
-    public static secondsToTime(seconds: number, format: 'hh:mm:ss' | 'mm:ss' | 'ss' = 'hh:mm:ss'): string {
-        if (seconds < 0) {
-            throw new Error('Seconds cannot be negative.');
-        }
-
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secondsStr = Math.floor(seconds % 60);
-
-        const pad = (num: number) => num.toString().padStart(2, '0');
-
-        switch (format) {
-            case 'hh:mm:ss':
-                return `${pad(hours)}:${pad(minutes)}:${pad(secondsStr)}`;
-            case 'mm:ss':
-                return `${pad(minutes)}:${pad(secondsStr)}`;
-            case 'ss':
-                return `${pad(secondsStr)}`;
-            default:
-                throw new Error('Invalid format. Use "hh:mm:ss", "mm:ss", or "ss".');
-        }
-    }
-    /** 有回调的迭代器 */
-    public static each(object: any, callback: Function): void {
-        if (Array.isArray(object)) {
-            object.every((value, index) => {
-                return callback.call(value, index, value) !== false;
-            });
-        } else if (typeof object === 'object' && object !== null) {
-            for (const key in object) {
-                if (object.hasOwnProperty(key) && callback.call(object[key], key, object[key]) === false) {
-                    return;
-                }
-            }
-        }
-    }
 
     /** 复制一个对象或数组，支持深拷贝和浅拷贝 */
-    public static copy(obj: object, isDeep = false, map = new WeakMap()) {
+    public static clone(obj: object, isDeep = false, map = new WeakMap()) {
         if (typeof obj !== 'object' || obj === null) {
             return obj; // 如果不是对象，直接返回原始值
         }
@@ -239,14 +172,14 @@ export default class Helper {
                 result = [];
                 map.set(obj, result); // 防止循环引用
                 for (let i = 0; i < obj.length; i++) {
-                    result[i] = this.copy(obj[i], true, map); // 递归深拷贝
+                    result[i] = this.clone(obj[i], true, map); // 递归深拷贝
                 }
             } else {
                 result = {};
                 map.set(obj, result); // 防止循环引用
                 for (let key in obj) {
                     if (obj.hasOwnProperty(key)) {
-                        result[key] = this.copy((obj as any)[key], true, map); // 递归深拷贝
+                        result[key] = this.clone((obj as any)[key], true, map); // 递归深拷贝
                     }
                 }
             }
@@ -255,5 +188,62 @@ export default class Helper {
             // 浅拷贝
             return Array.isArray(obj) ? [...obj] : { ...obj };
         }
+    }
+
+    /** 参数字符串化 */
+    public static qsStringify(obj: object): string {
+        // 检查是否为对象类型
+        if (typeof obj !== 'object' || obj === null) {
+            // 如果是非对象类型，直接返回其字符串形式
+            if (typeof obj === 'string') {
+                return encodeURIComponent(obj);
+            } else {
+                return String(obj);
+            }
+        }
+
+        // 如果是数组类型
+        if (Array.isArray(obj)) {
+            return obj.map((item) => this.qsStringify(item)).join(',');
+        }
+
+        // 如果是普通对象类型
+        return Object.keys(obj)
+            .map((key) => `${encodeURIComponent(key)}=${this.qsStringify(obj[key])}`)
+            .join('&');
+    }
+
+    /** 解析字符串参数 */
+    public static qsParse(queryString: string): object {
+        // 检查是否为字符串类型
+        if (typeof queryString !== 'string') {
+            throw new Error('Input must be a string');
+        }
+
+        // 创建空对象用于存储解析后的键值对
+        const result = {};
+
+        // 将查询字符串分割成键值对数组
+        const pairs = queryString.split('&');
+
+        // 遍历键值对数组，解析成对象的属性和值
+        pairs.forEach((pair) => {
+            // 分割键值对
+            const [key, value] = pair.split('=');
+
+            // 对键和值进行解码
+            const decodedKey = decodeURIComponent(key);
+            const decodedValue = decodeURIComponent(value);
+
+            // 检查值是否是数组的形式（以逗号分隔）
+            if (decodedValue.includes(',')) {
+                // 将值拆分为数组
+                result[decodedKey] = decodedValue.split(',');
+            } else {
+                result[decodedKey] = decodedValue;
+            }
+        });
+
+        return result;
     }
 }
