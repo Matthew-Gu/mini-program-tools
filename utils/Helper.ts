@@ -253,4 +253,24 @@ export default class Helper {
 
         return result;
     }
+
+    /** 防抖函数 */
+    public static debounce(func: Function, wait: number, immediate: boolean = false): Function {
+        let timeout: number | null = null;
+
+        return function (this: any, ...args: any[]) {
+            const context = this;
+
+            const later = () => {
+                timeout = null;
+                if (!immediate) func.apply(context, args); // 防抖：非立即执行时才执行
+            };
+
+            const callNow = immediate && !timeout;
+            if (timeout !== null) clearTimeout(timeout); // 清除上一个定时器
+            timeout = setTimeout(later, wait);
+
+            if (callNow) func.apply(context, args); // 立即执行
+        };
+    }
 }
