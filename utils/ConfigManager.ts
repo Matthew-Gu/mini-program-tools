@@ -23,8 +23,18 @@ export class ConfigManager {
 	/** 设置单个或多个配置项 */
 	public set(values: object, name?: string): void {
 		if (name) {
-			// 设置单个配置项
-			this.config.set(name, { ...this.config.get(name), ...values });
+			// 只在值是对象时进行深合并，不拆分字符串
+			if (this.has(name)) {
+				let existingConfig = this.config.get(name);
+				if (typeof values === 'object' && !Array.isArray(values)) {
+					existingConfig = { ...existingConfig, ...values };
+				} else {
+					existingConfig = values;
+				}
+				this.config.set(name, existingConfig);
+			} else {
+				this.config.set(name, values);
+			}
 		} else if (values && typeof values === 'object') {
 			// 批量设置配置项
 			Object.entries(values).forEach(([key, value]) => {
