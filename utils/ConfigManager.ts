@@ -1,81 +1,61 @@
 import config from '../config';
 
 export class ConfigManager {
-    private static _instance: ConfigManager;
+	private static _instance: ConfigManager;
+	protected config: Map<string, any> = new Map();
 
-    protected config: Map<string, any> = new Map([]);
+	private constructor() {}
 
-    public static get instance() {
-        if (!ConfigManager._instance) {
-            ConfigManager._instance = new ConfigManager();
-            ConfigManager._instance.set(config);
-        }
+	/** 获取 ConfigManager 实例 */
+	public static get instance(): ConfigManager {
+		if (!ConfigManager._instance) {
+			ConfigManager._instance = new ConfigManager();
+			ConfigManager._instance.set(config); // 默认配置
+		}
+		return ConfigManager._instance;
+	}
 
-        return ConfigManager._instance;
-    }
+	/** 检查配置是否存在 */
+	public has(name: string): boolean {
+		return this.config.has(name);
+	}
 
-    private constructor() {}
+	/** 设置单个或多个配置项 */
+	public set(values: object, name?: string): void {
+		if (name) {
+			// 设置单个配置项
+			this.config.set(name, { ...this.config.get(name), ...values });
+		} else if (values && typeof values === 'object') {
+			// 批量设置配置项
+			Object.entries(values).forEach(([key, value]) => {
+				this.set(value, key);
+			});
+		}
+	}
 
-    /** 检查配置是否存在 */
-    public has(name: string): boolean {
-        return this.config.has(name);
-    }
+	/** 获取配置，支持嵌套路径访问 */
+	public get(name: string, defaultValue: any = null): any {
+		if (!name) return defaultValue;
 
-    /** 写入配置 */
-    public set(values: object, name?: string): void {
-        if (name) {
-            if (this.has(name)) {
-                let config = this.config.get(name);
-                config = Object.assign(config, values);
-                this.config.set(name, config);
-            } else {
-                this.config.set(name, values);
-            }
-        } else {
-            for (let name in values) {
-                this.set(Reflect.get(values, name), name);
-            }
-        }
-    }
+		const keys = name.split('.');
+		let result = this.config.get(keys[0]);
 
-    /** 获取配置 */
-    public get(name: string, defaultValue: any = null): any {
-        if (!name) {
-            return defaultValue;
-        }
+		if (!result) return defaultValue;
 
-        if (name.indexOf('.') <= 0) {
-            let value = this.config.get(name);
-            if (!value) {
-                value = defaultValue;
-            }
+		try {
+			for (const key of keys.slice(1)) {
+				result = result ? result[key] : undefined;
+				if (result === undefined) return defaultValue;
+			}
+		} catch {
+			return defaultValue;
+		}
 
-            return value;
-        }
+		return result ?? defaultValue;
+	}
 
-        let arr = name.split('.');
-        let config = this.config.get(arr[0]);
-        arr.shift();
-
-        try {
-            arr.forEach((val, i) => {
-                if (config[val] !== undefined) {
-                    config = config[val];
-                } else {
-                    return defaultValue;
-                }
-            });
-        } catch (error) {
-            return defaultValue;
-        }
-
-        return config;
-    }
-
-    /** 删除配置 */
-    public delete(name: string): void {
-        if (this.has(name)) {
-            this.config.delete(name);
-        }
-    }
+	/** 删除配置 */
+	public delete(name: string): void {
+		this.config.delete(name);
+	}
 }
