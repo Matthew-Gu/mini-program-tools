@@ -291,4 +291,39 @@ export default class Helper {
 			if (callNow) func.apply(context, args); // 立即执行
 		};
 	}
+
+	/** 根据给定的keys从对象中选择属性 */
+	pick(
+		object: { [key: string]: any },
+		keys: string | string[]
+	): { [key: string]: any } {
+		const result: { [key: string]: any } = {};
+		const props = Array.isArray(keys) ? keys : [keys];
+
+		for (let i = 0; i < props.length; i++) {
+			const key = props[i];
+			if (key in object) {
+				result[key] = object[key];
+			}
+		}
+
+		return result;
+	}
+
+	/** 从对象中移除指定的keys */
+	omit(
+		object: { [key: string]: any },
+		keys: string | string[]
+	): { [key: string]: any } {
+		const result: { [key: string]: any } = {};
+		const props = Array.isArray(keys) ? keys : [keys];
+
+		for (const key in object) {
+			if (object.hasOwnProperty(key) && !props.includes(key)) {
+				result[key] = object[key];
+			}
+		}
+
+		return result;
+	}
 }
