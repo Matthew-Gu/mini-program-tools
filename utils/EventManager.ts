@@ -1,92 +1,86 @@
-class EventData {
-  public event: string = "";
-  public listener !: Function;
-  public object !: any;
-}
-
 export class EventManager {
+	private events: Map<string, Set<Function>> = new Map();
+	private functionCache: WeakMap<Function, string> = new WeakMap();
 
-  private static _instance: EventManager;
+	private static _instance: EventManager;
 
-  public static get instance() {
-    if (!EventManager._instance) {
-      EventManager._instance = new EventManager();
-    }
+	public static get instance() {
+		if (!EventManager._instance) {
+			EventManager._instance = new EventManager();
+		}
+		return EventManager._instance;
+	}
 
-    return EventManager._instance;
-  }
+	private getFunctionIdentifier(fn: Function): string {
+		if (!this.functionCache.has(fn)) {
+			const identifier = fn.toString(); // 生成唯一标识符
+			this.functionCache.set(fn, identifier);
+		}
+		return this.functionCache.get(fn)!;
+	}
 
-  private events: Map<string, Array<EventData>> = new Map();
+	public on(eventName: string, fn: Function): void {
+		const fnIdentifier = this.getFunctionIdentifier(fn);
 
-  private constructor() { }
+		if (this.events.has(eventName)) {
+			const handlers = this.events.get(eventName);
+			// 比较回调函数的标识符
+			if (
+				![...handlers!].some(
+					(handler) =>
+						this.getFunctionIdentifier(handler) === fnIdentifier
+				)
+			) {
+				// 防止函数重复注册
+				handlers?.add(fn);
+			}
+		} else {
+			const handlers = new Set<Function>();
+			handlers.add(fn);
+			this.events.set(eventName, handlers);
+		}
+	}
 
-  /** 注册事件 */
-  public on(event: string, listener: Function, object?: Object): void {
-    if (event == null || !listener) {
-      return;
-    }
+	public once(eventName: string, fn: Function): void {
+		const wrappedFn = (...args: any[]) => {
+			this.off(eventName, wrappedFn);
+			fn(...args);
+		};
 
-    let events = this.events.get(event);
-    if (!events) {
-      events = [];
-      this.events.set(event, events);
-    }
+		this.on(eventName, wrappedFn);
+	}
 
-    let data = new EventData();
-    data.event = event;
-    data.listener = listener;
-    data.object = object;
-    events?.push(data);
-  }
+	public off(eventName: string, fn?: Function): void {
+		if (this.events.has(eventName)) {
+			let handlers: Set<Function> = this.events.get(eventName)!;
+			if (!fn) {
+				this.events.delete(eventName);
+				return;
+			}
+			handlers.delete(fn);
+			if (handlers.size === 0) {
+				this.events.delete(eventName);
+			}
+		}
+	}
 
-  /** 注册一次事件 */
-  public once(event: string, listener: Function, object?: Object) {
-    let _listener: any = ($event: string, $args: any) => {
-      this.off(event, _listener, object);
-      _listener = null;
-      listener.call(object, $event, $args);
-    }
+	public emit(eventName: string, ...args: any): void {
+		if (this.events.has(eventName)) {
+			this.events.get(eventName)?.forEach((fn) => {
+				if (typeof fn === 'function') {
+					fn(...args);
+				}
+			});
+		} else {
+			console.warn(`event "${eventName}" is not exist`);
+		}
+	}
 
-    this.on(event, _listener, object);
-  }
+	public clear(): void {
+		this.events.clear();
+	}
 
-  /** 事件派发 */
-  public emit(event: string, args: any = null): void {
-    let events = this.events.get(event);
-    if (events) {
-      events.forEach((data: EventData) => {
-        data.listener.call(data.object, event, args);
-      });
-    }
-  }
-
-  /** 注销事件 */
-  public off(event: string, listener: Function, object?: Object): void {
-    let events = this.events.get(event);
-    if (!events) {
-      return;
-    }
-
-    for (let i = 0; i < events.length; i++) {
-      let data: EventData = events[i];
-      if (data.listener === listener && data.object == object) {
-        events.splice(i, 1);
-      }
-    }
-
-    if (events.length == 0) {
-      this.events.delete(event);
-    }
-  }
-
-  /** 注销所有事件 */
-  public offAll(): void {
-    this.events.clear();
-  }
-
-  /** 事件是否存在注册 */
-  public has(event: string): boolean {
-    return this.events.has(event);
-  }
-
+	public clearEvent(eventName: string): void {
+		this.off(eventName);
+	}
 }
