@@ -293,7 +293,7 @@ export default class Helper {
 	}
 
 	/** 根据给定的keys从对象中选择属性 */
-	pick(
+	public static pick(
 		object: { [key: string]: any },
 		keys: string | string[]
 	): { [key: string]: any } {
@@ -311,7 +311,7 @@ export default class Helper {
 	}
 
 	/** 从对象中移除指定的keys */
-	omit(
+	public static omit(
 		object: { [key: string]: any },
 		keys: string | string[]
 	): { [key: string]: any } {
