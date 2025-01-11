@@ -5,44 +5,50 @@ import { EventManager } from './EventManager';
 import { NetManager } from './NetManager';
 import { TimerManager } from './TimerManager';
 import { TabManager } from './TabManager';
-import { Validator } from './Validate';
+import { Validator, ValidatorRule } from './Validate';
 
 export class SingletonModule {
-    /** 账号模块 */
-    public account: Account = new Account();
+	/** 账号模块 */
+	public account: Account = new Account();
 
-    /** 事件模块 */
-    public get event(): EventManager {
-        return EventManager.instance;
-    }
+	/** 事件模块 */
+	public get event(): EventManager {
+		return EventManager.instance;
+	}
 
-    /** 配置模块 */
-    public get config(): ConfigManager {
-        return ConfigManager.instance;
-    }
+	/** 配置模块 */
+	public get config(): ConfigManager {
+		return ConfigManager.instance;
+	}
 
-    /** 计时器模块及轮询 */
-    public get timer(): TimerManager {
-        return TimerManager.instance;
-    }
+	/** 计时器模块及轮询 */
+	public get timer(): TimerManager {
+		return TimerManager.instance;
+	}
 
-    /** 网络请求模块 */
-    public get net(): NetManager {
-        return NetManager.instance;
-    }
+	/** 网络请求模块 */
+	public get net(): NetManager {
+		return NetManager.instance;
+	}
 
-    /** 数据缓存模块 */
-    public get cache(): CacheManager {
-        return CacheManager.instance;
-    }
+	/** 数据缓存模块 */
+	public get cache(): CacheManager {
+		return CacheManager.instance;
+	}
 
-    /** 动态菜单模块 */
-    public get tab(): TabManager {
-        return TabManager.instance;
-    }
+	/** 动态菜单模块 */
+	public get tab(): TabManager {
+		return TabManager.instance;
+	}
 
-    /** 数据验证器 */
-    public validator: Validator = new Validator();
+	/** 数据验证模块 */
+	public validate(
+		datas: Record<string, any>,
+		rules: Record<string, ValidatorRule[]>
+	) {
+		const v = Validator.instance;
+		return v.validate(datas, rules);
+	}
 }
 
 export let smc: SingletonModule = new SingletonModule();

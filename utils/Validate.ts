@@ -1,74 +1,104 @@
 export class Validator {
-    private defaultValidators: Record<string, (value: any, ...params: any[]) => boolean>;
+	private defaultValidators: Record<
+		string,
+		(value: any, ...params: any[]) => boolean
+	>;
 
-    constructor() {
-        this.defaultValidators = {
-            required: (value: any) => value !== '' && value !== null && value !== void 0,
-            isPhone: (value: string) => /^1[3-9]\d{9}$/.test(value),
-            maxLength: (value: string, param: number) => value.length <= param,
-            minLength: (value: string, param: number) => value.length >= param,
-            length: (value: string, param: number) => value.length === param,
-            max: (value: number, param: number) => value <= param,
-            min: (value: number, param: number) => value >= param,
-            equalTo: (value: any, param: string, allValues: Record<string, string>) => value === allValues[param],
-            isInteger: (value: any) => Math.floor(value) == value
-        };
-    }
+	private static _instance: Validator;
 
-    validate(datas: Record<string, any>, rules: Record<string, ValidatorRule[]>): Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            const errors: ValidationError[] = [];
-            const missingFields: string[] = [];
+	public static get instance() {
+		if (!Validator._instance) {
+			Validator._instance = new Validator();
+		}
 
-            for (let field of Object.keys(rules)) {
-                if (!(field in datas)) {
-                    missingFields.push(field);
-                }
-            }
+		return Validator._instance;
+	}
 
-            for (let field of Object.keys(rules)) {
-                if (missingFields.includes(field)) continue;
+	constructor() {
+		this.defaultValidators = {
+			required: (value: any) =>
+				value !== '' && value !== null && value !== void 0,
+			isPhone: (value: string) => /^1[3-9]\d{9}$/.test(value),
+			maxLength: (value: string, param: number) => value.length <= param,
+			minLength: (value: string, param: number) => value.length >= param,
+			length: (value: string, param: number) => value.length === param,
+			max: (value: number, param: number) => value <= param,
+			min: (value: number, param: number) => value >= param,
+			equalTo: (
+				value: any,
+				param: string,
+				allValues: Record<string, string>
+			) => value === allValues[param],
+			isInteger: (value: any) => Math.floor(value) == value
+		};
+	}
 
-                for (let rule of rules[field]) {
-                    let { validator, message, params } = rule;
-                    let result: boolean | undefined;
-                    if (typeof validator === 'function') {
-                        result = validator(datas[field], params, datas);
-                    } else if (this.defaultValidators.hasOwnProperty(validator)) {
-                        result = this.defaultValidators[validator](datas[field], params, datas);
-                    } else {
-                        errors.push({ field, message: `validator '${validator}' is not exist` });
-                        break;
-                    }
-                    if (!result) {
-                        errors.push({ field, message });
-                        break;
-                    }
-                }
-            }
+	validate(
+		datas: Record<string, any>,
+		rules: Record<string, ValidatorRule[]>
+	): Promise<boolean> {
+		return new Promise((resolve, reject) => {
+			const errors: ValidationError[] = [];
+			const missingFields: string[] = [];
 
-            missingFields.forEach((field) => {
-                errors.push({ field, message: `field ${field} not exist` });
-            });
+			for (let field of Object.keys(rules)) {
+				if (!(field in datas)) {
+					missingFields.push(field);
+				}
+			}
 
-            if (errors.length > 0) {
-                reject(errors);
-            } else {
-                resolve(true); // 校验成功
-            }
-        });
-    }
+			for (let field of Object.keys(rules)) {
+				if (missingFields.includes(field)) continue;
+
+				for (let rule of rules[field]) {
+					let { validator, message, params } = rule;
+					let result: boolean | undefined;
+					if (typeof validator === 'function') {
+						result = validator(datas[field], params, datas);
+					} else if (
+						this.defaultValidators.hasOwnProperty(validator)
+					) {
+						result = this.defaultValidators[validator](
+							datas[field],
+							params,
+							datas
+						);
+					} else {
+						errors.push({
+							field,
+							message: `validator '${validator}' is not exist`
+						});
+						break;
+					}
+					if (!result) {
+						errors.push({ field, message });
+						break;
+					}
+				}
+			}
+
+			missingFields.forEach((field) => {
+				errors.push({ field, message: `field ${field} not exist` });
+			});
+
+			if (errors.length > 0) {
+				reject(errors);
+			} else {
+				resolve(true); // 校验成功
+			}
+		});
+	}
 }
 
-type ValidatorRule = {
-    validator: string | ((value: any, ...params: any[]) => boolean);
-    message: string;
-    params?: any;
+export type ValidatorRule = {
+	validator: string | ((value: any, ...params: any[]) => boolean);
+	message: string;
+	params?: any;
 };
 
 type ValidationError = {
-    field: string;
-    message: string;
+	field: string;
+	message: string;
 };
 
 // * example
