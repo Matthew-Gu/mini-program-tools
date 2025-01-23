@@ -1,0 +1,68 @@
+.fancybox {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: row;
+  z-index: 1000;
+}
+
+.fancybox .mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  text-align: center;
+  background: #000000;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0.5;
+}
+
+.fancybox .picker-box .picker-view {
+  height: 700rpx;
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+  background-color: #ffffff;
+}
+
+.fancybox .btns {
+  display: flex;
+  position: absolute;
+  bottom: 600rpx;
+  width: 100%;
+  height: 100rpx;
+  font-size: 32rpx;
+  line-height: 100rpx;
+  justify-content: space-between;
+  border-bottom: 1px solid #eee;
+  background-color: #ffffff;
+  padding: 0 36rpx;
+  z-index: 10;
+}
+
+.fancybox .btns .close {
+  color: #676767;
+}
+
+.fancybox .btns .confirm {
+  color: #4d9cff;
+}
+
+.fancybox .picker-box .picketText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  font-size: 28rpx;
+  text-align: center;
+  color: #898989;
+  padding: 0 10rpx;
+  box-sizing: border-box;
+}

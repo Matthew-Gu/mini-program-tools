@@ -1,0 +1,19 @@
+<view class="fancybox" wx:if="{{enable}}">
+    <view class="mask"></view>
+    <view class="box">
+        <view class="btns">
+            <view class="close" bind:tap="close">取消</view>
+            <view class="confirm" bind:tap="confirm">确认</view>
+        </view>
+
+        <view class="picker-box">
+            <picker-view class="picker-view" indicator-style="height:50px;" value="{{value}}" bind:change="onPickerChanged" immediate-change="true">
+                <picker-view-column wx:for="{{columns}}" wx:key="pickerItem" wx:for-item="pickerRow">
+                    <view wx:for="{{pickerRow}}" wx:key="index" class="picketText">
+                        <view>{{item.name}}</view>
+                    </view>
+                </picker-view-column>
+            </picker-view>
+        </view>
+    </view>
+</view>

@@ -1,81 +1,81 @@
 export default class Helper {
+	/** 阻塞进程, 配合 async await 使用 */
+	public static sleep(milliseconds: number) {
+		return new Promise((resolve) => setTimeout(resolve, milliseconds));
+	}
+
 	/** 2个任意精度数字的加法计算 */
-	public static add(left_operand: number, right_operand: number): number {
-		let r1, r2, max;
+	public static add(number1: number, number2: number): number {
 		try {
-			r1 = left_operand.toString().split('.')[1].length;
-		} catch (e) {
-			r1 = 0;
-		}
+			const decimalPlaces = Math.max(
+				number1.toString().split('.')[1]?.length || 0,
+				number2.toString().split('.')[1]?.length || 0
+			);
 
-		try {
-			r2 = right_operand.toString().split('.')[1].length;
-		} catch (e) {
-			r2 = 0;
+			return parseFloat((number1 + number2).toFixed(decimalPlaces));
+		} catch (error) {
+			console.error('加法操作失败：', error);
+			return 0;
 		}
-
-		max = Math.pow(10, Math.max(r1, r2));
-		return (left_operand * max + right_operand * max) / max;
 	}
 
 	/** 2个任意精度数字的减法 */
-	public static sub(left_operand: number, right_operand: number): number {
-		let r1, r2, max, min;
+	public static sub(number1: number, number2: number): number {
 		try {
-			r1 = left_operand.toString().split('.')[1].length;
-		} catch (e) {
-			r1 = 0;
-		}
+			const decimalPlaces = Math.max(
+				number1.toString().split('.')[1]?.length || 0,
+				number2.toString().split('.')[1]?.length || 0
+			);
 
-		try {
-			r2 = right_operand.toString().split('.')[1].length;
-		} catch (e) {
-			r2 = 0;
+			return parseFloat((number1 - number2).toFixed(decimalPlaces));
+		} catch (error) {
+			console.error('减法操作失败：', error);
+			return 0;
 		}
-
-		max = Math.pow(10, Math.max(r1, r2));
-		min = r1 >= r2 ? r1 : r2;
-		return parseFloat(
-			((left_operand * max - right_operand * max) / max).toFixed(min)
-		);
 	}
 
 	/** 2个任意精度数字乘法计算 */
-	public static mul(left_operand: number, right_operand: number): number {
-		let max = 0,
-			s1 = left_operand.toString(),
-			s2 = right_operand.toString();
+	public static mul(number1: number, number2: number): number {
 		try {
-			max += s1.split('.')[1].length;
-		} catch (e) {}
+			const s1 = number1.toString();
+			const s2 = number2.toString();
+			const decimalPlaces1 = s1.split('.')[1]?.length || 0;
+			const decimalPlaces2 = s2.split('.')[1]?.length || 0;
+			const totalDecimalPlaces = decimalPlaces1 + decimalPlaces2;
 
-		try {
-			max += s2.split('.')[1].length;
-		} catch (e) {}
+			const num1 = Number(s1.replace('.', ''));
+			const num2 = Number(s2.replace('.', ''));
 
-		return (
-			(Number(s1.replace('.', '')) * Number(s2.replace('.', ''))) /
-			Math.pow(10, max)
-		);
+			const result = (num1 * num2) / Math.pow(10, totalDecimalPlaces);
+			return result;
+		} catch (error) {
+			console.error('乘法操作失败：', error);
+			return 0;
+		}
 	}
 
 	/** 2个任意精度的数字除法计算 */
-	public static div(left_operand: number, right_operand: number): number {
-		let t1 = 0,
-			t2 = 0,
-			r1,
-			r2;
+	public static div(number1: number, number2: number): number {
 		try {
-			t1 = left_operand.toString().split('.')[1].length;
-		} catch (e) {}
+			if (number2 === 0) {
+				console.error('被除数不能为0');
+				return 0;
+			}
+			const s1 = number1.toString();
+			const s2 = number2.toString();
+			const decimalPlaces1 = s1.split('.')[1]?.length || 0;
+			const decimalPlaces2 = s2.split('.')[1]?.length || 0;
+			const totalDecimalPlaces = decimalPlaces2 - decimalPlaces1;
 
-		try {
-			t2 = right_operand.toString().split('.')[1].length;
-		} catch (e) {}
+			const num1 = Number(s1.replace('.', ''));
+			const num2 = Number(s2.replace('.', ''));
 
-		r1 = Number(left_operand.toString().replace('.', ''));
-		r2 = Number(right_operand.toString().replace('.', ''));
-		return (r1 / r2) * Math.pow(10, t2 - t1);
+			const result = (num1 / num2) * Math.pow(10, totalDecimalPlaces);
+			return result;
+		} catch (error) {
+			console.error('除法操作失败：', error);
+			return 0;
+		}
 	}
 
 	/** 将数组打乱 */
@@ -110,8 +110,11 @@ export default class Helper {
 		return `http://dict.youdao.com/dictvoice?type=0&audio=${english}`;
 	}
 
-	/** 格式化日期 */
-	public static date(dateStr: any, format = 'yyyy-MM-dd HH:mm:ss'): string {
+	/** 格式化日期 yyyy-MM-dd HH:mm:ss */
+	public static formatDate(
+		dateStr: any,
+		format = 'yyyy-MM-dd HH:mm:ss'
+	): string {
 		const REGEX_PARSE =
 			/^(\d{4})[-/]?(\d{1,2})?[-/]?(\d{0,2})[Tt\s]*(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?[.:]?(\d+)?$/;
 		let date: Date;
@@ -163,6 +166,64 @@ export default class Helper {
 			);
 		}
 		return format;
+	}
+
+	/** 格式化秒数 hh:mm:ss 支持短格式 */
+	public static formatSeconds(
+		seconds: number,
+		format: string,
+		short = false
+	) {
+		const hours = Math.floor(seconds / 3600);
+		const minutes = Math.floor((seconds % 3600) / 60);
+		const secs = seconds % 60;
+
+		// 格式化小时、分钟、秒
+		const hourStr = format.includes('hh')
+			? String(hours).padStart(2, '0')
+			: String(hours);
+		const minuteStr = format.includes('mm')
+			? String(minutes).padStart(2, '0')
+			: String(minutes);
+		const secondStr = format.includes('ss')
+			? String(secs).padStart(2, '0')
+			: String(secs);
+
+		// 替换映射
+		const replacements: { [key: string]: string } = {
+			hh: hourStr,
+			h: hourStr,
+			mm: minuteStr,
+			m: minuteStr,
+			ss: secondStr,
+			s: secondStr
+		};
+
+		// 格式化替换函数
+		const formatTime = (format: string) => {
+			return format.replace(
+				/hh|h|mm|m|ss|s/g,
+				(match) => replacements[match]
+			);
+		};
+
+		// 处理短格式
+		if (short) {
+			if (hours > 0) {
+				return formatTime(format);
+			} else if (minutes > 0) {
+				// 获取从分钟开始的格式
+				const index = format.indexOf('m');
+				return formatTime(format.slice(index));
+			} else if (secs > 0) {
+				// 获取从秒开始的格式
+				const index = format.indexOf('s');
+				return formatTime(format.slice(index));
+			}
+		}
+
+		// 返回完整格式
+		return formatTime(format);
 	}
 
 	/** 复制一个对象或数组，支持深拷贝和浅拷贝 */
