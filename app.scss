@@ -6,318 +6,354 @@ button,
 input,
 textarea,
 scroll-view {
-    box-sizing: border-box;
-    font-family: PingFang SC-Medium, PingFang SC, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
-        Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    font-weight: 400;
-}
-
-.pingfang-b {
-    font-family: PingFang SC-Bold;
-}
-
-.pingfang-m {
-    font-family: PingFang SC-Medium;
-}
-
-.safe-bottom {
-    padding-bottom: constant(safe-area-inset-bottom); // 兼容 IOS < 11.2
-    padding-bottom: env(safe-area-inset-bottom); // 兼容 IOS >= 11.2
-    /* 顺序不能颠倒 */
-}
-
-.border-box {
-    box-sizing: border-box;
-}
-
-.content-box {
-    box-sizing: content-box;
+	box-sizing: border-box;
+	font-family: -apple-system, 'PingFang SC', BlinkMacSystemFont,
+		MicrosoftYaHei, 'Segoe UI', Roboto, 'Open Sans', 'Helvetica Neue', Arial,
+		sans-serif;
+	font-weight: 400;
+	margin: 0;
+	padding: 0;
+	min-width: 0;
+	min-height: 0;
 }
 
 image {
-    display: block;
-    height: auto;
+	display: block;
+	height: auto;
+	width: 0;
+	height: 0;
+}
+
+.pingfang-b {
+	font-family: PingFang SC-Bold;
+}
+
+.pingfang-m {
+	font-family: PingFang SC-Medium;
+}
+
+.safe-bottom {
+	padding-bottom: constant(safe-area-inset-bottom); // 兼容 IOS < 11.2
+	padding-bottom: env(safe-area-inset-bottom); // 兼容 IOS >= 11.2
+	/* 顺序不能颠倒 */
+}
+
+.border-box {
+	box-sizing: border-box;
+}
+
+.content-box {
+	box-sizing: content-box;
 }
 
 .rel {
-    position: relative;
+	position: relative !important;
 }
 
 .abs {
-    position: absolute;
+	position: absolute !important;
 }
 
 .fixed {
-    position: fixed;
+	position: fixed !important;
 }
 
 .top-0 {
-    top: 0;
+	top: 0 !important;
 }
 
 .left-0 {
-    left: 0;
+	left: 0 !important;
 }
 
 .right-0 {
-    right: 0;
+	right: 0 !important;
 }
 
 .bottom-0 {
-    bottom: 0;
+	bottom: 0 !important;
+}
+
+.inset-0 {
+	top: 0 !important;
+	left: 0 !important;
+	bottom: 0 !important;
+	right: 0 !important;
 }
 
 .text-center {
-    text-align: center;
+	text-align: center !important;
 }
 
 .text-left {
-    text-align: left;
+	text-align: left !important;
 }
 
 .text-right {
-    text-align: right;
+	text-align: right !important;
 }
 
 .w-full {
-    width: 100%;
+	width: 100% !important;
 }
 
 .h-full {
-    height: 100%;
+	height: 100% !important;
+}
+
+.full {
+	width: 100% !important;
+	height: 100% !important;
 }
 
 .w-screen {
-    width: 100vw;
+	width: 100vw !important;
 }
 
 .h-screen {
-    height: 100vh;
+	height: 100vh !important;
+}
+
+.full-screen {
+	width: 100vw !important;
+	height: 100vh !important;
 }
 
 .h-screen-safe {
-    height: calc(100vh - 100rpx - constant(safe-area-inset-bottom));
-    height: calc(100vh - 100rpx - env(safe-area-inset-bottom));
+	height: calc(100vh - 100rpx - constant(safe-area-inset-bottom));
+	height: calc(100vh - 100rpx - env(safe-area-inset-bottom));
 }
 
 .ml-auto {
-    margin-left: auto;
+	margin-left: auto !important;
 }
 
 .mr-auto {
-    margin-right: auto;
+	margin-right: auto !important;
 }
 
 .mx-auto {
-    margin-left: auto;
-    margin-right: auto;
+	margin-left: auto !important;
+	margin-right: auto !important;
 }
 
 .mb-0 {
-    margin-bottom: 0 !important;
+	margin-bottom: 0 !important;
 }
 
 .scroll-y {
-    overflow-y: auto;
+	overflow-y: auto;
 }
 
 .scroll-x {
-    overflow-x: auto;
+	overflow-x: auto;
 }
 
 .hidden {
-    overflow: hidden;
+	overflow: hidden;
 }
 
 .visible-hidden {
-    visibility: hidden;
+	visibility: hidden;
 }
 
 .visible-show {
-    visibility: visible;
+	visibility: visible;
 }
 
 .block {
-    display: block;
+	display: block;
 }
 
 .inline-block {
-    display: inline-block;
+	display: inline-block;
 }
 
 .flex {
-    display: flex;
+	display: flex;
 }
 
 .flex-1 {
-    flex: 1 1 0%;
+	flex: 1 1 0%;
+	min-width: 0;
+	min-height: 0;
 }
 
 .flex-auto {
-    flex: 1 1 auto;
+	flex: 1 1 auto;
 }
 
 .flex-shrink-0 {
-    flex-shrink: 0;
+	flex-shrink: 0;
 }
 
 .flex-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.flex-col-center {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
 }
 
 .flex-row {
-    flex-direction: row;
+	display: flex;
+	flex-direction: row;
 }
 
 .flex-col {
-    flex-direction: column;
+	display: flex;
+	flex-direction: column;
 }
 
 .flex-wrap {
-    flex-wrap: wrap;
+	flex-wrap: wrap;
 }
 
 .flex-nowrap {
-    flex-wrap: nowrap;
+	flex-wrap: nowrap;
 }
 
 .justify-start {
-    justify-content: flex-start;
+	justify-content: flex-start;
 }
 
 .justify-end {
-    justify-content: flex-end;
+	justify-content: flex-end;
 }
 
 .justify-center {
-    justify-content: center;
+	justify-content: center;
 }
 
 .justify-between {
-    justify-content: space-between;
+	justify-content: space-between;
 }
 
 .justify-around {
-    justify-content: space-around;
+	justify-content: space-around;
 }
 
 .justify-evenly {
-    justify-content: space-evenly;
+	justify-content: space-evenly;
 }
 
 .align-center {
-    align-items: center;
+	align-items: center;
 }
 
 .align-start {
-    align-items: flex-start;
+	align-items: flex-start;
 }
 
 .align-end {
-    align-items: flex-end;
+	align-items: flex-end;
 }
 
 .align-stretch {
-    align-items: stretch;
+	align-items: stretch;
 }
 
 .align-baseline {
-    align-items: baseline;
+	align-items: baseline;
 }
 
 .line-clamp-1 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
+	overflow: hidden;
+	display: -webkit-box;
+	white-space: nowrap;
+	-webkit-line-clamp: 1;
+	-webkit-box-orient: vertical;
 }
 
 .line-clamp-2 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
 }
 
 .line-clamp-3 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
 }
 
 .overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.3);
-    z-index: 99999;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background: rgba(0, 0, 0, 0.3);
+	z-index: 99999;
 }
 
 .border1rpx,
 .border1rpx_before {
-    position: relative;
-    border-width: 0rpx !important;
-    padding: 0.5rpx;
-    z-index: 0;
+	position: relative;
+	border-width: 0rpx !important;
+	padding: 0.5rpx;
+	z-index: 0;
 }
 
 .border1rpx::after,
 .border1rpx_before::before {
-    position: absolute;
-    content: '';
-    border-style: inherit;
-    border-color: inherit;
-    border-radius: inherit;
-    box-sizing: border-box !important;
-    border-width: 2rpx !important;
-    left: 0;
-    top: 0;
-    width: 200% !important;
-    height: 200% !important;
-    transform-origin: 0 0;
-    transform: scale(0.5) !important;
-    z-index: -1;
+	position: absolute;
+	content: '';
+	border-style: inherit;
+	border-color: inherit;
+	border-radius: inherit;
+	box-sizing: border-box !important;
+	border-width: 2rpx !important;
+	left: 0;
+	top: 0;
+	width: 200% !important;
+	height: 200% !important;
+	transform-origin: 0 0;
+	transform: scale(0.5) !important;
+	z-index: -1;
 }
 
 .border1rpx-full {
-    margin: -1rpx;
+	margin: -1rpx;
 }
 
-.z-1 {
-    z-index: -1;
+.z-bg {
+	z-index: -1 !important;
 }
 
-.z1 {
-    z-index: 1;
+.z-base {
+	z-index: 1 !important;
 }
 
 .rotate-90 {
-    rotate: 90deg;
+	rotate: 90deg;
 }
 
 .rotate-180 {
-    rotate: 180deg;
+	rotate: 180deg;
 }
 
 .rotate-270 {
-    rotate: 270deg;
+	rotate: 270deg;
 }
 
 .sr-only {
-    top: -9999px;
-    left: -9999px;
-    position: fixed;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
+	top: -9999px;
+	left: -9999px;
+	position: fixed;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border-width: 0;
 }
