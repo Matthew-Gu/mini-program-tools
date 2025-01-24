@@ -353,6 +353,22 @@ export default class Helper {
 		};
 	}
 
+	/** 节流函数 */
+	public static throttle<T extends any[], R>(
+		func: (...args: T) => R,
+		wait: number
+	): (...args: T) => void {
+		let inThrottle: boolean;
+		return function (this: any, ...args: T): void {
+			const context = this;
+			if (!inThrottle) {
+				func.apply(context, args);
+				inThrottle = true;
+				setTimeout(() => (inThrottle = false), wait);
+			}
+		};
+	}
+
 	/** 根据给定的keys从对象中选择属性 */
 	public static pick(
 		object: { [key: string]: any },
