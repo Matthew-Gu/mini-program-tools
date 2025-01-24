@@ -265,7 +265,7 @@ image {
 .line-clamp-1 {
 	overflow: hidden;
 	display: -webkit-box;
-	white-space: nowrap;
+	word-break: break-all;
 	-webkit-line-clamp: 1;
 	-webkit-box-orient: vertical;
 }
