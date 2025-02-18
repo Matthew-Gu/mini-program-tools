@@ -403,4 +403,68 @@ export default class Helper {
 
 		return result;
 	}
+
+	/** 设置可以回调的地址 */
+	public static setCallbackUrl(
+		mode?: 'redirectTo' | 'switchTab' | 'reLaunch' | 'navigateTo'
+	) {
+		return new Promise((resolve) => {
+			let pages = getCurrentPages(); //获取加载的页面
+			let currentPage = pages[pages.length - 1]; //获取当前页面的对象
+			let urlPage = ''; // 存储的跳转地址
+			let url = currentPage.route; //当前页面url
+			let argumentsStr = '';
+			let options = currentPage.options; //如果要获取url中所带的参数可以查看options
+			for (let key in options) {
+				let value = options[key];
+				argumentsStr += key + '=' + value + '&';
+			}
+			if (argumentsStr) {
+				argumentsStr = argumentsStr.substring(
+					0,
+					argumentsStr.length - 1
+				);
+				urlPage = url + '?' + argumentsStr;
+			} else {
+				urlPage = url;
+			}
+			let callbackObj = {
+				callbackUrl: `/${urlPage}`,
+				mode: mode || 'redirectTo'
+			};
+			wx.setStorageSync('callbackObj', JSON.stringify(callbackObj));
+			resolve({});
+		});
+	}
+
+	/** 获取可以回调的地址并进行跳转 */
+	public static getCallbackUrl() {
+		return new Promise((_resolve, reject) => {
+			const callbackObj = wx.getStorageSync('callbackObj');
+			if (callbackObj) {
+				let resultObj = JSON.parse(callbackObj);
+				let callbackUrl = resultObj.callbackUrl;
+				let mode = resultObj.mode;
+				const modeActions: Record<string, Function> = {
+					redirectTo: (cb: any) =>
+						wx.redirectTo({ url: callbackUrl, success: cb }),
+					switchTab: (cb: any) =>
+						wx.switchTab({ url: callbackUrl, success: cb }),
+					reLaunch: (cb: any) =>
+						wx.reLaunch({ url: callbackUrl, success: cb }),
+					navigateTo: (cb: any) =>
+						wx.navigateTo({ url: callbackUrl, success: cb })
+				};
+
+				const action = modeActions[mode];
+				action &&
+					action(() => {
+						// 跳转成功清除回调地址
+						wx.removeStorageSync('callbackObj');
+					});
+			} else {
+				reject();
+			}
+		});
+	}
 }
