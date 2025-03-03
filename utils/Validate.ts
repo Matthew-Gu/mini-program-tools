@@ -1,3 +1,38 @@
+class PromiseE<T, E = any> extends Promise<T> {
+	constructor(
+		executor: (
+			resolve: (value: T | PromiseLike<T>) => void,
+			reject: (reason?: E) => void
+		) => void
+	) {
+		super(executor);
+	}
+
+	// 重写then方法，返回新的PromiseE实例，保持错误类型E
+	then<TResult1 = T, TResult2 = never>(
+		onfulfilled?:
+			| ((value: T) => TResult1 | PromiseLike<TResult1>)
+			| null
+			| undefined,
+		onrejected?:
+			| ((reason: E) => TResult2 | PromiseLike<TResult2>)
+			| null
+			| undefined
+	): PromiseE<TResult1 | TResult2, E> {
+		return new PromiseE((resolve, reject) => {
+			// 将onrejected的类型断言为any以适配父类签名
+			super.then(onfulfilled, onrejected as any).then(resolve, reject);
+		});
+	}
+
+	// 重写catch方法，保留错误类型E
+	catch<R = never>(
+		onrejected?: ((reason: E) => R | PromiseLike<R>) | null | undefined
+	): PromiseE<T | R, E> {
+		return super.catch(onrejected) as PromiseE<T | R, E>;
+	}
+}
+
 export class Validator {
 	private defaultValidators: Record<
 		string,
@@ -36,8 +71,8 @@ export class Validator {
 	validate(
 		datas: Record<string, any>,
 		rules: Record<string, ValidatorRule[]>
-	): Promise<boolean> {
-		return new Promise((resolve, reject) => {
+	): PromiseE<void, ValidationError[]> {
+		return new PromiseE((resolve, reject) => {
 			const errors: ValidationError[] = [];
 			const missingFields: string[] = [];
 
@@ -84,7 +119,7 @@ export class Validator {
 			if (errors.length > 0) {
 				reject(errors);
 			} else {
-				resolve(true); // 校验成功
+				resolve(); // 校验成功
 			}
 		});
 	}

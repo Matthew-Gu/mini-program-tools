@@ -5,13 +5,9 @@ export class SocketManager {
 	private static _instance: SocketManager;
 	// 开启标识
 	state = false;
-	private websock: WechatMiniprogram.SocketTask | null = null;
+	private socket: WechatMiniprogram.SocketTask | null = null;
 	private server = '';
 	private header = {};
-	// 心跳timer
-	private hearbeat_timer = -1;
-	// 心跳发送频率
-	private hearbeat_interval = 20000;
 	// 是否自动重连
 	private is_reonnect = true;
 	// 重连次数
@@ -22,6 +18,10 @@ export class SocketManager {
 	private reconnect_timer = -1;
 	// 重连频率
 	private reconnect_interval = 3000;
+	// 心跳timer
+	private hearbeat_timer = -1;
+	// 心跳发送频率
+	private hearbeat_interval = 20000;
 
 	public static get instance() {
 		if (!SocketManager._instance) {
@@ -31,14 +31,13 @@ export class SocketManager {
 	}
 
 	public connect() {
-		if (ConfigManager.instance.get('app.debug')) {
-			this.server = ConfigManager.instance.get('app.devSocketServer');
-		} else {
-			this.server = ConfigManager.instance.get('app.onlineSocketServer');
-		}
+		this.server = ConfigManager.instance.get('app.debug')
+			? ConfigManager.instance.get('app.devSocketServer')
+			: ConfigManager.instance.get('app.onlineSocketServer');
+
 		this.header = ConfigManager.instance.get('app.socketHeader');
 
-		this.websock = wx.connectSocket({
+		this.socket = wx.connectSocket({
 			url: `${this.server}?token=${smc.account.token}`,
 			header: this.header,
 			success: () => {
@@ -52,18 +51,18 @@ export class SocketManager {
 		});
 
 		// 连接成功
-		this.websock.onOpen((e: any) => {
-			console.log('连接成功', e);
+		this.socket.onOpen(() => {
 			this.state = true;
 			this.is_reonnect = true;
+			this.reconnect_count = 1; // 重置重连次数
 			// 开启心跳
 			this.heartbeat();
 		});
 
 		// 关闭连接
-		this.websock.onClose((e: any) => {
+		this.socket.onClose((e: any) => {
 			console.log('连接已断开', e);
-			clearInterval(this.hearbeat_interval);
+			clearInterval(this.hearbeat_timer);
 			this.state = false;
 
 			// 需要重新连接
@@ -84,24 +83,24 @@ export class SocketManager {
 		});
 
 		// 连接发生错误
-		this.websock.onError((e: any) => {
+		this.socket.onError((e: any) => {
 			console.log('Socket连接发生错误', e);
 		});
 
-		this.websock.onMessage((e: any) => {
+		this.socket.onMessage((e: any) => {
 			this.onMessage(e);
 		});
 	}
 
 	public sendMessage(data: any, callback?: Function) {
 		// 开启状态直接发送
-		if (this.websock) {
+		if (this.socket) {
 			const jsonData = JSON.stringify(data);
 			console.log('sendMessage', data);
-			this.websock.send({
+			this.socket.send({
 				data: jsonData,
-				complete: () => {
-					callback?.();
+				complete: (e) => {
+					callback?.(e);
 				}
 			});
 		}
@@ -137,11 +136,12 @@ export class SocketManager {
 	public closeSocket(code = 1000) {
 		clearInterval(this.hearbeat_interval);
 		this.is_reonnect = false;
-		if (this.websock) {
-			this.websock.close({
+		if (this.socket) {
+			this.socket.close({
 				code,
 				complete: () => {
 					console.log('断开连接成功');
+					this.socket = null; // 置空 socket 避免触发reconnect
 				}
 			});
 		}
@@ -150,7 +150,7 @@ export class SocketManager {
 	private reconnect() {
 		console.log('发起重新连接', this.reconnect_current);
 
-		if (this.websock && this.state) {
+		if (this.socket && this.state) {
 			this.closeSocket();
 		}
 
