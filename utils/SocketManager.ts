@@ -9,17 +9,17 @@ export class SocketManager {
 	private server = '';
 	private header = {};
 	// 是否自动重连
-	private is_reonnect = true;
+	private is_reconnect = true;
 	// 重连次数
 	private reconnect_count = 3;
 	// 已发起重连次数
 	private reconnect_current = 1;
 	// 重连timer
-	private reconnect_timer = -1;
+	private reconnect_timer: number | null = null;
 	// 重连频率
 	private reconnect_interval = 3000;
 	// 心跳timer
-	private hearbeat_timer = -1;
+	private hearbeat_timer: number | null = null;
 	// 心跳发送频率
 	private hearbeat_interval = 20000;
 
@@ -30,12 +30,33 @@ export class SocketManager {
 		return SocketManager._instance;
 	}
 
-	public connect() {
-		this.server = ConfigManager.instance.get('app.debug')
-			? ConfigManager.instance.get('app.devSocketServer')
-			: ConfigManager.instance.get('app.onlineSocketServer');
+	public connect(options?: {
+		server?: string;
+		header?: Record<string, string>;
+		isReconnect?: boolean; // 是否自动重连
+		reconnectCount?: number; // 重连次数
+		reconnectInterval?: number; // 重连频率
+		hearbeatInterval?: number; // 心跳发送频率
+	}) {
+		const {
+			server,
+			header,
+			isReconnect,
+			reconnectCount,
+			reconnectInterval,
+			hearbeatInterval
+		} = options || {};
+		this.server =
+			server ??
+			(ConfigManager.instance.get('app.debug')
+				? ConfigManager.instance.get('app.devSocketServer')
+				: ConfigManager.instance.get('app.onlineSocketServer'));
+		this.header = header ?? ConfigManager.instance.get('app.socketHeader');
 
-		this.header = ConfigManager.instance.get('app.socketHeader');
+		this.is_reconnect = isReconnect ?? this.is_reconnect;
+		this.reconnect_count = reconnectCount ?? this.reconnect_count;
+		this.reconnect_interval = reconnectInterval ?? this.reconnect_interval;
+		this.hearbeat_interval = hearbeatInterval ?? this.hearbeat_interval;
 
 		this.socket = wx.connectSocket({
 			url: `${this.server}?token=${smc.account.token}`,
@@ -53,8 +74,8 @@ export class SocketManager {
 		// 连接成功
 		this.socket.onOpen(() => {
 			this.state = true;
-			this.is_reonnect = true;
-			this.reconnect_count = 1; // 重置重连次数
+			this.is_reconnect = true;
+			this.reconnect_current = 1; // 重置重连次数
 			// 开启心跳
 			this.heartbeat();
 		});
@@ -62,16 +83,22 @@ export class SocketManager {
 		// 关闭连接
 		this.socket.onClose((e: any) => {
 			console.log('连接已断开', e);
-			clearInterval(this.hearbeat_timer);
+			if (this.hearbeat_timer) {
+				clearInterval(this.hearbeat_timer);
+				this.hearbeat_timer = null;
+			}
 			this.state = false;
 
 			// 需要重新连接
-			if (this.is_reonnect) {
+			if (this.is_reconnect) {
 				this.reconnect_timer = setTimeout(() => {
 					// 超过重连次数
 					if (this.reconnect_current > this.reconnect_count) {
 						console.log('超过重连次数');
-						clearTimeout(this.reconnect_timer);
+						if (this.reconnect_timer) {
+							clearTimeout(this.reconnect_timer);
+							this.reconnect_timer = null;
+						}
 						return;
 					}
 
@@ -121,6 +148,7 @@ export class SocketManager {
 	private heartbeat() {
 		if (this.hearbeat_timer) {
 			clearInterval(this.hearbeat_timer);
+			this.hearbeat_timer = null;
 		}
 
 		this.hearbeat_timer = setInterval(() => {
@@ -134,8 +162,11 @@ export class SocketManager {
 	}
 
 	public closeSocket(code = 1000) {
-		clearInterval(this.hearbeat_interval);
-		this.is_reonnect = false;
+		if (this.hearbeat_timer) {
+			clearInterval(this.hearbeat_interval);
+			this.hearbeat_timer = null;
+		}
+		this.is_reconnect = false;
 		if (this.socket) {
 			this.socket.close({
 				code,
@@ -147,13 +178,20 @@ export class SocketManager {
 		}
 	}
 
-	private reconnect() {
+	private reconnect(options?: {
+		server?: string;
+		header?: Record<string, string>;
+		isReconnect?: boolean;
+		reconnectCount?: number;
+		reconnectInterval?: number;
+		hearbeatInterval?: number;
+	}) {
 		console.log('发起重新连接', this.reconnect_current);
 
 		if (this.socket && this.state) {
 			this.closeSocket();
 		}
 
-		this.connect();
+		this.connect(options);
 	}
 }
