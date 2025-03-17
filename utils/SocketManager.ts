@@ -38,6 +38,9 @@ export class SocketManager {
 		reconnectInterval?: number; // 重连频率
 		hearbeatInterval?: number; // 心跳发送频率
 	}) {
+		if (this.socket) {
+			this.closeSocket();
+		}
 		const {
 			server,
 			header,
@@ -163,7 +166,7 @@ export class SocketManager {
 
 	public closeSocket(code = 1000) {
 		if (this.hearbeat_timer) {
-			clearInterval(this.hearbeat_interval);
+			clearInterval(this.hearbeat_timer);
 			this.hearbeat_timer = null;
 		}
 		this.is_reconnect = false;
@@ -173,6 +176,7 @@ export class SocketManager {
 				complete: () => {
 					console.log('断开连接成功');
 					this.socket = null; // 置空 socket 避免触发reconnect
+					this.state = false;
 				}
 			});
 		}
