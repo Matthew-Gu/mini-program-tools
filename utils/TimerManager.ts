@@ -1,12 +1,13 @@
-class Timer {
+export class Timer {
 	id: string;
 	startTime: number;
 	duration: number | null;
 	interval: number;
 	isCountdown: boolean;
 	onTimeChange?: (elapsedTime: number) => void;
-	onTimeFinished?: () => void;
+	onTimeFinished?: (isAutoStop: boolean) => void;
 	timeoutId: ReturnType<typeof setTimeout> | null = null;
+	remainingTime: number | null = null;
 
 	constructor(
 		id: string,
@@ -15,29 +16,56 @@ class Timer {
 			interval?: number;
 			isCountdown?: boolean;
 			onTimeChange?: (elapsedTime: number) => void;
-			onTimeFinished?: () => void;
+			onTimeFinished?: (isAutoStop: boolean) => void;
 		}
 	) {
 		this.id = id;
 		this.startTime = Date.now();
 		this.duration = options.duration ?? null;
-		this.interval = options.interval ?? 1000; // 默认为 1000 毫秒
-		this.isCountdown = options.isCountdown ?? true; // 默认为 true
+		this.interval = options.interval ?? 1000; // 默认 1000 毫秒
+		this.isCountdown = options.isCountdown ?? true; // 默认 true
 		this.onTimeChange = options.onTimeChange;
 		this.onTimeFinished = options.onTimeFinished;
 	}
 
 	start(): void {
 		if (this.timeoutId) return;
+		if (this.remainingTime) {
+			this.startTime = Date.now() - (this.duration! - this.remainingTime);
+		} else {
+			this.startTime = Date.now();
+		}
 		this.tick();
 	}
 
-	stop(): void {
+	stop(isAutoStop = false): void {
 		if (this.timeoutId) {
 			clearTimeout(this.timeoutId);
 			this.timeoutId = null;
 		}
-		if (this.onTimeFinished) this.onTimeFinished();
+		if (this.onTimeFinished && isAutoStop) this.onTimeFinished(isAutoStop);
+	}
+
+	pause(): void {
+		if (this.timeoutId) {
+			clearTimeout(this.timeoutId);
+			this.timeoutId = null;
+		}
+		if (this.duration) {
+			const now = Date.now();
+			const elapsedTime = now - this.startTime;
+			this.remainingTime = this.duration - elapsedTime;
+		}
+	}
+
+	restart(): void {
+		if (this.timeoutId) {
+			clearTimeout(this.timeoutId);
+			this.timeoutId = null;
+		}
+
+		this.remainingTime = null;
+		this.start();
 	}
 
 	private tick(): void {
@@ -47,7 +75,7 @@ class Timer {
 			this.duration !== null ? this.duration - elapsedTime : null;
 
 		if (this.isCountdown && timeLeft !== null && timeLeft <= 0) {
-			this.stop();
+			this.stop(true); // 自动停止
 			return;
 		}
 
@@ -60,21 +88,19 @@ class Timer {
 }
 
 class PollingTimer extends Timer {
-	onTick: () => Promise<boolean>; // 修改为返回一个布尔值，指示是否停止轮询
-	lastExecutionTime: number;
+	onTick: () => Promise<boolean>;
 
 	constructor(
 		id: string,
 		options: {
 			interval?: number;
-			onTick: () => Promise<boolean>; // onTick 返回是否需要停止轮询的标志
+			onTick: () => Promise<boolean>;
 			onTimeChange?: (elapsedTime: number) => void;
-			onTimeFinished?: () => void;
+			onTimeFinished?: (isAutoStop: boolean) => void;
 		}
 	) {
-		super(id, options); // 调用父类构造函数
+		super(id, options);
 		this.onTick = options.onTick;
-		this.lastExecutionTime = Date.now();
 	}
 
 	start(): void {
@@ -82,33 +108,31 @@ class PollingTimer extends Timer {
 		this.poll();
 	}
 
-	stop(): void {
+	stop(isAutoStop = false): void {
 		if (this.timeoutId) {
 			clearTimeout(this.timeoutId);
 			this.timeoutId = null;
 		}
-		if (this.onTimeFinished) this.onTimeFinished();
+		if (this.onTimeFinished) this.onTimeFinished(isAutoStop);
 	}
 
 	private async poll(): Promise<void> {
 		const startTime = Date.now();
 
 		try {
-			// 执行异步操作并判断是否需要停止轮询
 			const shouldStop = await this.onTick();
 
 			if (shouldStop) {
-				this.stop(); // 如果满足条件，停止轮询
+				this.stop(true); // 自动停止
 				return;
 			}
 
 			const elapsedTime = Date.now() - startTime;
-			const nextInterval = Math.max(this.interval - elapsedTime, 0); // 时间补偿，确保不会出现负值
+			const nextInterval = Math.max(this.interval - elapsedTime, 0);
 			this.timeoutId = setTimeout(() => this.poll(), nextInterval);
 		} catch (error) {
-			// 错误处理
 			console.error(`Polling failed: ${error}`);
-			this.stop();
+			this.stop(true);
 		}
 	}
 }
@@ -137,12 +161,18 @@ export class TimerManager {
 		return uuid;
 	}
 
+	/** 创建定时器 */
 	addTimer(options: {
+		/** 倒计时时长，单位毫秒 */
 		duration?: number | null;
+		/** 计时器间隔，单位毫秒 */
 		interval?: number;
+		/** 是否为倒计时 */
 		isCountdown?: boolean;
+		/** 倒计时变化时调用的函数 */
 		onTimeChange?: (elapsedTime: number) => void;
-		onTimeFinished?: () => void;
+		/** 倒计时结束时调用的函数 */
+		onTimeFinished?: (isAutoStop: boolean) => void;
 	}): Timer {
 		const id = this.uniqid();
 		if (this.timers.has(id)) throw new Error('已存在相同id的定时器');
@@ -152,10 +182,13 @@ export class TimerManager {
 		return timer;
 	}
 
+	/** 创建轮询定时器 */
 	addPollingTimer(options: {
-		interval: number;
-		onTick: () => Promise<boolean>; // 修改为返回布尔值的异步方法
-		onTimeChange?: (elapsedTime: number) => void;
+		/** 轮询间隔，单位毫秒 */
+		interval?: number;
+		/** 轮询函数 */
+		onTick: () => Promise<boolean>;
+		/** 轮询结束函数 */
 		onTimeFinished?: () => void;
 	}): PollingTimer {
 		const id = this.uniqid();
@@ -163,94 +196,27 @@ export class TimerManager {
 		this.timers.set(id, pollingTimer);
 		return pollingTimer;
 	}
-
+	/** 开始执行定时器 */
 	startTimer(id: string): void {
 		const timer = this.timers.get(id);
 		if (!timer) throw new Error(`未找到id为 ${id} 的定时器`);
 		timer.start();
 	}
-
+	/** 停止执行定时器 */
 	stopTimer(id: string): void {
 		const timer = this.timers.get(id);
 		if (!timer) throw new Error(`未找到id为 ${id} 的定时器`);
 		timer.stop();
 	}
-
+	/** 清除定时器 */
 	removeTimer(id: string): void {
 		this.stopTimer(id);
 		this.timers.delete(id);
 	}
-
+	/** 清除所有定时器 */
 	clearAll(): void {
 		for (const [id] of this.timers) {
 			this.removeTimer(id);
 		}
 	}
 }
-
-// * example
-// const manager = TimerManager.instance;
-// // 计时器可以通过manager启动或关闭，也可以自己启动
-// const onTimeChange = (elapsedTime: number): void => console.log(`已经过: ${elapsedTime / 1000} 秒`);
-// const onTimeFinished = (): void => console.log('计时结束！');
-
-// // 添加一个5秒的倒计时，每秒更新一次
-// const countdownOptions = {
-//     duration: 5 * 1000,
-//     onTimeChange,
-//     onTimeFinished
-// };
-// const countdownTimer = manager.addTimer(countdownOptions);
-// countdownTimer.start();
-// manager.startTimer(countdownTimer.id);
-
-// // 添加一个正计时，每秒更新一次
-// const countupOptions = {
-//     isCountdown: false,
-//     interval: 1000,
-//     onTimeChange,
-//     onTimeFinished
-// };
-// const countupTimer = manager.addTimer(countupOptions);
-// countupTimer.start();
-// manager.startTimer(countupTimer.id);
-// setTimeout(() => {
-//     // 3秒后停止计时
-//     countupTimer.stop();
-//     manager.stopTimer(countupTimer.id);
-// }, 3000);
-
-// let count = 0; // 设定一个计数器作为停止条件
-
-// const pollingOptions = {
-//     interval: 2000, // 每2秒轮询一次
-//     onTick: async () => {
-//         let retryCount = 0;
-//         const maxRetries = 5; // 最大重试次数
-
-//         count += 1;
-//         console.log(`Count: ${count}`);
-
-//         try {
-//             // 假设当计数为5时停止轮询
-//             if (count >= 5) {
-//                 console.log('条件达成，停止轮询');
-//                 return true; // 返回 true，表示需要停止轮询
-//             }
-//             await new Promise((resolve) => setTimeout(resolve, 1000)); // 每次操作耗时1秒
-//             return false; // 返回 false，表示继续轮询
-//         } catch (error) {
-//             retryCount++;
-//             if (retryCount >= maxRetries) {
-//                 console.error('达到最大重试次数，停止轮询');
-//                 return true;
-//             }
-//             return false;
-//         }
-//     }
-// };
-
-// // 创建轮询定时器并启动
-// const pollingTimer = manager.addPollingTimer(pollingOptions);
-// pollingTimer.start();
-// manager.startTimer(pollingTimer.id);

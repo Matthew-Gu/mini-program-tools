@@ -1,43 +1,47 @@
+/**
+ * data:{
+ *    name:'',
+ *    password:''
+ * }
+ * rules:{
+ *    name:[
+ *        {validator:'required',message:'用户名必填'},
+ *        {validator:'minLength',message:'用户名至少为两位',params:2}
+ *        // 使用内置规则;可校验多个
+ *    ],
+ *    password:[
+ *        {validator:(value)=>!!value,message:'密码必填'}
+ *        // 若传自定义规则,优先使用自定义规则
+ *    ]
+ * }
+ *
+ * validator.valdate(data,rules)
+ * .then(()=>{
+ *      // 校验成功，执行后续逻辑
+ * }).catch((errors)=>{
+ *      // 获取校验失败信息
+ * })
+ */
 class PromiseE<T, E = any> extends Promise<T> {
-	constructor(
-		executor: (
-			resolve: (value: T | PromiseLike<T>) => void,
-			reject: (reason?: E) => void
-		) => void
-	) {
+	constructor(executor: (resolve: (value: T | PromiseLike<T>) => void, reject: (reason?: E) => void) => void) {
 		super(executor);
 	}
 
-	// 重写then方法，返回新的PromiseE实例，保持错误类型E
 	then<TResult1 = T, TResult2 = never>(
-		onfulfilled?:
-			| ((value: T) => TResult1 | PromiseLike<TResult1>)
-			| null
-			| undefined,
-		onrejected?:
-			| ((reason: E) => TResult2 | PromiseLike<TResult2>)
-			| null
-			| undefined
+		onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null | undefined,
+		onrejected?: ((reason: E) => TResult2 | PromiseLike<TResult2>) | null | undefined
 	): PromiseE<TResult1 | TResult2, E> {
-		return new PromiseE((resolve, reject) => {
-			// 将onrejected的类型断言为any以适配父类签名
-			super.then(onfulfilled, onrejected as any).then(resolve, reject);
-		});
+		// 直接调用父类 then，但用 PromiseE 断言类型
+		return super.then(onfulfilled, onrejected) as PromiseE<TResult1 | TResult2, E>;
 	}
 
-	// 重写catch方法，保留错误类型E
-	catch<R = never>(
-		onrejected?: ((reason: E) => R | PromiseLike<R>) | null | undefined
-	): PromiseE<T | R, E> {
+	catch<R = never>(onrejected?: ((reason: E) => R | PromiseLike<R>) | null | undefined): PromiseE<T | R, E> {
 		return super.catch(onrejected) as PromiseE<T | R, E>;
 	}
 }
 
 export class Validator {
-	private defaultValidators: Record<
-		string,
-		(value: any, ...params: any[]) => boolean
-	>;
+	private defaultValidators: Record<string, (value: any, ...params: any[]) => boolean>;
 
 	private static _instance: Validator;
 
@@ -51,76 +55,57 @@ export class Validator {
 
 	constructor() {
 		this.defaultValidators = {
-			required: (value: any) =>
-				value !== '' && value !== null && value !== void 0,
+			required: (value: any) => value !== '' && value !== null && value !== void 0,
 			isPhone: (value: string) => /^1[3-9]\d{9}$/.test(value),
 			maxLength: (value: string, param: number) => value.length <= param,
 			minLength: (value: string, param: number) => value.length >= param,
 			length: (value: string, param: number) => value.length === param,
 			max: (value: number, param: number) => value <= param,
 			min: (value: number, param: number) => value >= param,
-			equalTo: (
-				value: any,
-				param: string,
-				allValues: Record<string, string>
-			) => value === allValues[param],
+			equalTo: (value: any, param: string, allValues: Record<string, string>) => value === allValues[param],
 			isInteger: (value: any) => Math.floor(value) == value
 		};
 	}
 
-	validate(
-		datas: Record<string, any>,
-		rules: Record<string, ValidatorRule[]>
-	): PromiseE<void, ValidationError[]> {
+	validate(datas: Record<string, any>, rules: Record<string, ValidatorRule[]>): PromiseE<void, ValidationError[]> {
 		return new PromiseE((resolve, reject) => {
 			const errors: ValidationError[] = [];
-			const missingFields: string[] = [];
 
-			for (let field of Object.keys(rules)) {
-				if (!(field in datas)) {
-					missingFields.push(field);
+			const abortEarly = true; // 遇错即停
+
+			for (const [field, validators] of Object.entries(rules)) {
+				if (!datas.hasOwnProperty(field)) {
+					const err = { field, message: `字段 '${field}' 不存在于数据中` };
+					if (abortEarly) return reject([err]);
+					errors.push(err);
+					continue;
 				}
-			}
 
-			for (let field of Object.keys(rules)) {
-				if (missingFields.includes(field)) continue;
+				const value = datas[field];
 
-				for (let rule of rules[field]) {
-					let { validator, message, params } = rule;
-					let result: boolean | undefined;
-					if (typeof validator === 'function') {
-						result = validator(datas[field], params, datas);
-					} else if (
-						this.defaultValidators.hasOwnProperty(validator)
-					) {
-						result = this.defaultValidators[validator](
-							datas[field],
-							params,
-							datas
-						);
-					} else {
-						errors.push({
-							field,
-							message: `validator '${validator}' is not exist`
-						});
+				for (const rule of validators) {
+					const { validator, message, params } = rule;
+
+					const fn = typeof validator === 'function' ? validator : this.defaultValidators[validator];
+
+					if (!fn) {
+						const err = { field, message: `校验器 '${validator}' 不存在` };
+						if (abortEarly) return reject([err]);
+						errors.push(err);
 						break;
 					}
+
+					const result = fn(value, params, datas);
 					if (!result) {
-						errors.push({ field, message });
-						break;
+						const err = { field, message };
+						if (abortEarly) return reject([err]);
+						errors.push(err);
+						break; // 同一个字段内，失败就不再继续后续规则
 					}
 				}
 			}
 
-			missingFields.forEach((field) => {
-				errors.push({ field, message: `field ${field} not exist` });
-			});
-
-			if (errors.length > 0) {
-				reject(errors);
-			} else {
-				resolve(); // 校验成功
-			}
+			errors.length ? reject(errors) : resolve();
 		});
 	}
 }
@@ -135,33 +120,3 @@ type ValidationError = {
 	field: string;
 	message: string;
 };
-
-// * example
-// let data = {
-//     name: '',
-//     password: ''
-// };
-// let rules = {
-//     name: [
-//         { validator: 'required', message: '用户名必填' },
-//         { validator: 'minLength', message: '用户名至少为两位', params: 2 }
-//         // 使用内置规则;可校验多个
-//     ],
-//     password: [
-//         { validator: (value: any) => !!value, message: '密码必填' }
-//         // 若传自定义规则，优先使用自定义规则
-//     ]
-// };
-// let validator = new Validator();
-// validator
-//     .validate(data, rules)
-//     .then(() => {
-//         // 校验成功，执行后续逻辑
-//     })
-//     .catch((errors) => {
-//         // 获取校验失败信息
-//         wx.showToast({
-//             title: errors[0].message,
-//             icon: 'none'
-//         });
-//     });

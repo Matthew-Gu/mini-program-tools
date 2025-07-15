@@ -1,0 +1,17 @@
+{
+  "name": "self-study-mini",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "zxs": "node switch.js zxs",
+    "huike": "node switch.js huike",
+    "leyu": "node switch.js leyu"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "",
+  "dependencies": {},
+  "devDependencies": {
+    "miniprogram-api-typings": "^2.8.3-1"
+  }
+}

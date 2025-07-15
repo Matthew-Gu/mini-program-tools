@@ -1,6 +1,9 @@
-<view class="popup-container">
-    <view wx:if="{{maskShow}}" class="popup-mask {{maskClass}}" style="{{maskStyle}}" bind:tap="close"></view>
-    <view wx:if="{{popupShow}}" class="popup-wrapper {{popupClass}}" style="{{popupStyle}}">
-        <slot />
-    </view>
+<view hidden="{{ !enable }}" class="popup-container">
+	<view
+		class="popup-mask {{ maskClass }}"
+		style="{{ maskStyle }}"
+		bind:tap="close"></view>
+	<view class="popup-wrapper {{ popupClass }}" style="{{ popupStyle }}">
+		<slot />
+	</view>
 </view>

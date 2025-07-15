@@ -41,6 +41,7 @@ export class SocketManager {
 		if (this.socket) {
 			this.closeSocket();
 		}
+
 		const {
 			server,
 			header,
@@ -49,11 +50,7 @@ export class SocketManager {
 			reconnectInterval,
 			hearbeatInterval
 		} = options || {};
-		this.server =
-			server ??
-			(ConfigManager.instance.get('app.debug')
-				? ConfigManager.instance.get('app.devSocketServer')
-				: ConfigManager.instance.get('app.onlineSocketServer'));
+		this.server = server ?? ConfigManager.instance.get('app.socketServer');
 		this.header = header ?? ConfigManager.instance.get('app.socketHeader');
 
 		this.is_reconnect = isReconnect ?? this.is_reconnect;
@@ -77,7 +74,6 @@ export class SocketManager {
 		// 连接成功
 		this.socket.onOpen(() => {
 			this.state = true;
-			this.is_reconnect = true;
 			this.reconnect_current = 1; // 重置重连次数
 			// 开启心跳
 			this.heartbeat();
@@ -126,7 +122,7 @@ export class SocketManager {
 		// 开启状态直接发送
 		if (this.socket) {
 			const jsonData = JSON.stringify(data);
-			console.log('sendMessage', data);
+			// console.log("sendMessage", data);
 			this.socket.send({
 				data: jsonData,
 				complete: (e) => {
@@ -159,7 +155,7 @@ export class SocketManager {
 				command: 'ping' // 心跳包
 			};
 			this.sendMessage(data, () => {
-				console.log('socket', 'ping');
+				// console.log("socket", "ping");
 			});
 		}, this.hearbeat_interval);
 	}
@@ -192,10 +188,7 @@ export class SocketManager {
 	}) {
 		console.log('发起重新连接', this.reconnect_current);
 
-		if (this.socket && this.state) {
-			this.closeSocket();
-		}
-
+		this.closeSocket();
 		this.connect(options);
 	}
 }

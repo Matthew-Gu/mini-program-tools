@@ -1,15 +1,11 @@
 import { ConfigManager } from './ConfigManager';
 import { smc } from './Singleton';
 
-type Methods =
-	| 'OPTIONS'
-	| 'GET'
-	| 'HEAD'
-	| 'POST'
-	| 'PUT'
-	| 'DELETE'
-	| 'TRACE'
-	| 'CONNECT';
+type Methods = 'OPTIONS' | 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE' | 'TRACE' | 'CONNECT';
+
+type Config = {
+	loading?: boolean;
+};
 
 export class NetManager {
 	/** 服务地址 */
@@ -21,7 +17,9 @@ export class NetManager {
 	/** 当前请求的header */
 	private currentRequestHeader: any = {};
 	/** 当前请求的服务器地址前缀 */
-	private currentRequestServer = '';
+	private currentRequestServer: string = '';
+	/** 需要loading请求的数量 */
+	private needLoadingRequestCount = 0;
 
 	private static _instance: NetManager;
 
@@ -37,24 +35,14 @@ export class NetManager {
 	private constructor() {}
 
 	private init() {
-		if (ConfigManager.instance.get('app.debug')) {
-			NetManager.server = ConfigManager.instance.get('app.netDevServer');
-		} else {
-			NetManager.server = ConfigManager.instance.get(
-				'app.netOnlineServer'
-			);
-		}
-
-		NetManager.header = ConfigManager.instance.get('app.netHeader');
+		NetManager.server = ConfigManager.instance.get('netServer');
+		NetManager.header = ConfigManager.instance.get('netHeader');
 	}
 
 	/** 设置header */
 	public setHeader(header: object, isNew = false): this {
 		if (isNew) {
-			NetManager.header = Object.assign(
-				ConfigManager.instance.get('app.netHeader'),
-				header
-			);
+			NetManager.header = Object.assign(ConfigManager.instance.get('netHeader'), header);
 		} else {
 			NetManager.header = Object.assign(NetManager.header, header);
 		}
@@ -74,46 +62,42 @@ export class NetManager {
 	}
 
 	/** 设置请求的server */
-	public server(server: string): this {
+	public server(server: any): this {
 		this.currentRequestServer = server;
 		return this;
 	}
 
 	/** 发起GET请求 */
-	public get(path: string): Promise<any> {
-		return this.sendRequest('GET', path);
+	public get<T>(path: string, config?: Config): Promise<T> {
+		return this.sendRequest('GET', path, config);
 	}
 
 	/** 发起POST请求 */
-	public post(path: string): Promise<any> {
-		return this.sendRequest('POST', path);
+	public post<T>(path: string, config?: Config): Promise<T> {
+		return this.sendRequest('POST', path, config);
 	}
 
 	/** 发起PUT请求 */
-	public put(path: string): Promise<any> {
-		return this.sendRequest('PUT', path);
+	public put<T>(path: string, config?: Config): Promise<T> {
+		return this.sendRequest('PUT', path, config);
 	}
 
-	private sendRequest(method: Methods, path: string): Promise<any> {
+	private sendRequest<T>(method: Methods, path: string, config?: Config): Promise<T> {
 		// 优先使用临时请求服务器前缀
-		const url = `${this.currentRequestServer || NetManager.server}${
-			path ? '/' + path : ''
-		}`;
+		const url = `${this.currentRequestServer || NetManager.server}${path ? '/' + path : ''}`;
 
 		const options = {
 			url: url,
 			data: this.currentRequestData,
-			header: Object.assign(
-				{},
-				NetManager.header,
-				this.currentRequestHeader
-			)
+			header: Object.assign({}, NetManager.header, this.currentRequestHeader),
+			loading: config?.loading ?? true
 		};
 
 		this.currentRequestData = {}; // 清空当前请求数据
 		this.currentRequestHeader = {}; // 清空当前请求头
 		this.currentRequestServer = ''; // 清空当前请求服务器前缀
 
+		options.loading && this.showLoading();
 		return new Promise((resolve, reject) => {
 			wx.request({
 				method: method,
@@ -121,19 +105,54 @@ export class NetManager {
 				data: options.data,
 				header: options.header,
 				success: (response) => {
-					if (
-						response.statusCode === 200 &&
-						smc.account.netResponseVerify(response.data)
-					) {
-						resolve(response.data);
+					options.loading && this.tryHideLoading();
+					if (response.statusCode === 200 && this.netResponseVerify(response.data)) {
+						resolve(response.data as T);
 					} else {
-						resolve(response.errMsg || 'Request failed');
+						reject(response.errMsg || 'Request failed');
 					}
 				},
 				fail: (error) => {
+					this.tryHideLoading();
 					reject(error.errMsg);
 				}
 			});
 		});
+	}
+
+	private showLoading() {
+		this.needLoadingRequestCount++;
+		wx.showLoading({
+			title: '加载中',
+			mask: true
+		});
+	}
+
+	private tryHideLoading() {
+		if (this.needLoadingRequestCount <= 0) return;
+		this.needLoadingRequestCount--;
+		if (this.needLoadingRequestCount === 0) {
+			wx.hideLoading();
+		}
+	}
+
+	/** 网络请求响应验证 */
+	private netResponseVerify(response: any): boolean {
+		if (response.code == 401) {
+			smc.account.loginQuit();
+
+			wx.reLaunch({
+				url: '/pages/login/index',
+				success: () => {
+					wx.showToast({
+						title: '登录信息失效',
+						icon: 'none'
+					});
+				}
+			});
+			return false;
+		} else {
+			return true;
+		}
 	}
 }
