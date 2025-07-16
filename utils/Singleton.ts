@@ -5,7 +5,6 @@ import { EventManager } from './EventManager';
 import { NetManager } from './NetManager';
 import { TimerManager } from './TimerManager';
 import { TabManager } from './TabManager';
-import { Validator, ValidatorRule } from './Validate';
 
 export class SingletonModule {
 	/** 账号模块 */
@@ -39,15 +38,6 @@ export class SingletonModule {
 	/** 动态菜单模块 */
 	public get tab(): TabManager {
 		return TabManager.instance;
-	}
-
-	/** 数据验证模块 */
-	public validate(
-		datas: Record<string, any>,
-		rules: Record<string, ValidatorRule[]>
-	) {
-		const v = Validator.instance;
-		return v.validate(datas, rules);
 	}
 }
 

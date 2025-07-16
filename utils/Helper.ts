@@ -6,3 +6,4 @@ export * from './helper-modules/request';
 export * from './helper-modules/function';
 export * from './helper-modules/navigate';
 export * from './helper-modules/platform';
+export * from './helper-modules/validate';
